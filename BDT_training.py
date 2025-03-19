@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal 
 import scipy.stats as stats
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
 import argparse
 import os
 
@@ -11,13 +11,15 @@ parser.add_argument("--start_runs", default=0, type=int)
 parser.add_argument("--runs", default=1000, type=int)
 parser.add_argument("--directory", required=True, type=str)
 parser.add_argument("--bins", type=int, default = 256)
+parser.add_argument('--dimensions', type=int, default =2)
+parser.add_argument('--ensemble_over', type=int, default =50)
 args = parser.parse_args()
 
 def to_categorical(Y, N_classes=2):
 	Y=np.array(Y,dtype=int)
 	return np.eye(N_classes)[Y]
 
-rv = multivariate_normal([0,0], [[1,0],[0,1]])
+rv = multivariate_normal(np.zeros(args.dimensions), np.diag(np.ones(args.dimensions)))
 if not os.path.exists(args.directory):
 	os.makedirs(args.directory)
 
@@ -29,6 +31,7 @@ for i in range(args.start_runs, args.start_runs+args.runs):
         
     data = rv.rvs(400000)
     data_train, data_test, BT_train, BT_test = np.array_split(data, 4)
+    BT_test = rv.rvs(1000000)
 
     X_train = np.concatenate((data_train, BT_train), axis=0)
     Y_train = np.append(np.ones(len(data_train)), np.zeros(len(BT_train)))
@@ -37,8 +40,13 @@ for i in range(args.start_runs, args.start_runs+args.runs):
     X_train = X_train[inds]
     Y_train = Y_train[inds]
 
-    tree = HistGradientBoostingClassifier(validation_fraction=0.5, max_bins=args.bins, early_stopping=True)
-    tree.fit(X_train, Y_train)
+    preds_BT = np.zeros(len(BT_test))
+    preds_data = np.zeros(len(data_test))
+    for j in range(args.ensemble_over):
+        tree = GradientBoostingClassifier(validation_fraction=0.5, n_iter_no_change=10, random_state=i*args.ensemble_over+j)#HistGradientBoostingClassifier(validation_fraction=0.5, max_bins=args.bins, early_stopping=True)
+        tree.fit(X_train, Y_train)
+        preds_BT += tree.predict_proba(BT_test)[:,1]
+        preds_data += tree.predict_proba(data_test)[:,1]
 
-    np.save(direc_run+"data_preds.npy", tree.predict_proba(data_test))
-    np.save(direc_run+"BT_preds.npy", tree.predict_proba(BT_test))
+    np.save(direc_run+"data_preds.npy", preds_data/args.ensemble_over)
+    np.save(direc_run+"BT_preds.npy", preds_BT/args.ensemble_over)
