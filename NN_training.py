@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 parser.add_argument("--start_runs", default=0, type=int)
 parser.add_argument("--runs", default=100, type=int)
 parser.add_argument("--directory", required=True, type=str)
+parser.add_argument("--trainistest", default=False, action="store_true")
 args = parser.parse_args()
 
 def to_categorical(Y, N_classes=2):
@@ -54,8 +55,14 @@ for i in range(args.start_runs, args.start_runs+args.runs):
 	if not os.path.exists(direc_run):
 		os.makedirs(direc_run)
 		
-	data = rv.rvs(400000)
-	data_train, data_test, BT_train, BT_test = np.array_split(data, 4)
+	if args.trainistest:
+		data = rv.rvs(200000)
+		data_train, BT_train = np.array_split(data, 2)
+		data_test = data_train
+		BT_test = BT_train
+	else: 
+		data = rv.rvs(400000)
+		data_train, data_test, BT_train, BT_test = np.array_split(data, 4)
 
 	X_train = np.concatenate((data_train, BT_train), axis=0)
 	Y_train = to_categorical(np.append(np.ones(len(data_train)), np.zeros(len(BT_train))))
