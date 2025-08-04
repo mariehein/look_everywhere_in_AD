@@ -16,6 +16,8 @@ parser.add_argument("--start_runs", default=0, type=int)
 parser.add_argument("--runs", default=100, type=int)
 parser.add_argument("--directory", required=True, type=str)
 parser.add_argument("--trainistest", default=False, action="store_true")
+parser.add_argument("--noearlystopping", default=False, action="store_true")
+
 args = parser.parse_args()
 
 def to_categorical(Y, N_classes=2):
@@ -75,16 +77,27 @@ for i in range(args.start_runs, args.start_runs+args.runs):
 
 	earlyStopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
 
-	results = model.fit(
-		X_train,
-		Y_train,
-		batch_size=1024,
-		epochs=100,
-		shuffle=True,
-		verbose=2,
-		validation_split=0.5,
-		callbacks=[earlyStopping],
-	)
+	if args.noearlystopping:
+		results = model.fit(
+			X_train,
+			Y_train,
+			batch_size=1024,
+			epochs=50,
+			shuffle=True,
+			verbose=2,
+			validation_split=0.5,
+		)
+	else:
+		results = model.fit(
+			X_train,
+			Y_train,
+			batch_size=1024,
+			epochs=100,
+			shuffle=True,
+			verbose=2,
+			validation_split=0.5,
+			callbacks=[earlyStopping],
+		)
 
 	np.save(direc_run+'classifier_history.npy', results.history)
 	np.save(direc_run+"data_preds.npy", model.predict(data_test))

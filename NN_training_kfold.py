@@ -16,6 +16,7 @@ parser.add_argument("--start_runs", default=0, type=int)
 parser.add_argument("--runs", default=100, type=int)
 parser.add_argument("--folds", default=5, type=int)
 parser.add_argument("--directory", required=True, type=str)
+parser.add_argument("--noearlystopping", default=False, action="store_true")
 args = parser.parse_args()
 
 def to_categorical(Y, N_classes=2):
@@ -80,18 +81,31 @@ for i in range(args.start_runs, args.start_runs+args.runs):
 
         model = make_model(inputs=2)
 
-        earlyStopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
+        if args.noearlystopping:
+            earlyStopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
 
-        results = model.fit(
-            X_train,
-            Y_train,
-            batch_size=1024,
-            epochs=100,
-            shuffle=True,
-            verbose=2,
-            validation_split=0.5,
-            callbacks=[earlyStopping],
-        )
+            results = model.fit(
+                X_train,
+                Y_train,
+                batch_size=1024,
+                epochs=50,
+                shuffle=True,
+                verbose=2,
+                validation_split=0.5,
+            )
+        else:   
+            earlyStopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
+
+            results = model.fit(
+                X_train,
+                Y_train,
+                batch_size=1024,
+                epochs=100,
+                shuffle=True,
+                verbose=2,
+                validation_split=0.5,
+                callbacks=[earlyStopping],
+            )
 		
         data_preds[k] = model.predict(data_test)[:,1]
         samples_preds[k] = model.predict(BT_test)[:,1]
