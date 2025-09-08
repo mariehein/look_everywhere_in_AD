@@ -16,6 +16,7 @@ parser.add_argument("--start_runs", default=0, type=int)
 parser.add_argument("--runs", default=100, type=int)
 parser.add_argument("--directory", required=True, type=str)
 parser.add_argument("--noearlystopping", default=False, action="store_true")
+parser.add_argument("--uniform", default=False, action="store_true")
 
 
 args = parser.parse_args()
@@ -47,7 +48,16 @@ def make_model(activation="relu",hidden=3,inputs=4,lr=1e-3,dropout=0.1, l1=0, l2
 
 	return model
 
-rv = multivariate_normal([0,0], [[1,0],[0,1]])
+
+def oned_sample(N, rv):
+    x = rv.rvs(N).reshape((N,1))
+    y = rv.rvs(N).reshape((N,1))
+    return np.concatenate((x,y), axis=1)
+
+if args.uniform: 
+    rv = stats.uniform(loc=-2, scale=4)
+else:
+	rv = multivariate_normal([0,0], [[1,0],[0,1]])
 if not os.path.exists(args.directory):
 	os.makedirs(args.directory)
 	
@@ -56,7 +66,10 @@ for i in range(args.start_runs, args.start_runs+args.runs):
 	if not os.path.exists(direc_run):
 		os.makedirs(direc_run)
 
-	data = rv.rvs(40000)
+	if args.uniform:
+		data = oned_sample(40000, rv)
+	else:
+		data = rv.rvs(40000)
 	X_train, X_test =np.array_split(data,2)
 
 	Y_train = np.append(np.ones(len(X_train)//2), np.zeros(len(X_train)//2))
