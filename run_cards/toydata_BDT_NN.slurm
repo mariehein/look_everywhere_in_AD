@@ -17,6 +17,10 @@ cd ..
 
 classifier=${1}
 earlystopping=${2}
+kfolds=${3}
+echo "Classifier: ${classifier}"
+echo "Earlystopping: ${earlystopping}"
+echo "Kfolding: ${kfolds}"
 
 gen_direc="/hpcwork/zu992399/look_elsewhere_paper/"
 
@@ -28,4 +32,10 @@ else
     extra_args="--noearlystopping"
 fi
 
-python toydata_BDT_NN.py --directory ${direc} --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs 100
+if [[ "$kfolds" == "True" ]]; then
+    echo "kfolds"
+    python toydata_BDT_NN_kfolds.py --directory ${direc}"kfolds/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs 100 ${extra_args}
+else
+    echo "traintest"
+    python toydata_BDT_NN.py --directory ${direc}"traintest/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs 100 ${extra_args}
+fi

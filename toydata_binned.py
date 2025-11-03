@@ -2,7 +2,7 @@ import numpy as np
 import tqdm
 import statistics_utils as stats
 
-directory = "/hpcwork/zu992399/look_elsewhere/toydata_binned/"
+directory = "/hpcwork/zu992399/look_elsewhere_paper/toydata_binned/"
 
 bins = 5
 bins_edge = 2
@@ -13,7 +13,7 @@ folds = 5
 def perform_test_traintest(N_tests, bins, N, bins_edge = 2):
     rv = stats.multivariate_normal([0,0], [[1,0],[0,1]])
     edges = [np.linspace(-bins_edge,bins_edge,bins+1), np.linspace(-bins_edge,bins_edge,bins+1)]
-    exp = stats.histogram_expectations(edges, bins, rv)
+    exp = stats.histogram_expectations(edges, bins, rv, N)
 
     p_train = np.zeros((bins,bins, N_tests))
     p_test = np.zeros((bins,bins, N_tests))
@@ -27,17 +27,16 @@ def perform_test_traintest(N_tests, bins, N, bins_edge = 2):
         p_test[:,:,k] = stats.p_value_binomial(hist, exp, N)
 
     min_ind_on_train = np.argmin(p_train.reshape((bins*bins, N_tests)), axis=0)
-    p_train = np.array([p_train.reshape((bins*bins, N_tests))[min_ind_on_train,j] for j in range(N_tests)])
-    p_test = np.array([p_test.reshape((bins*bins, N_tests))[min_ind_on_train,j] for j in range(N_tests)])
-    
+    p_train = np.array([p_train.reshape((bins*bins,N_tests))[min_ind_on_train[i],i] for i in range(N_tests)])
+    p_test = np.array([p_test.reshape((bins*bins,N_tests))[min_ind_on_train[i],i] for i in range(N_tests)])
     return p_train, p_test 
 
 def perform_test_kfolding(N_tests, bins, N, bins_edge = None, folds=5):
     rv = stats.multivariate_normal([0,0], [[1,0],[0,1]])
     edges = [np.linspace(-bins_edge,bins_edge,bins+1), np.linspace(-bins_edge,bins_edge,bins+1)]
-    exp = stats.histogram_expectations(edges, bins, rv)
+    exp = stats.histogram_expectations(edges, bins, rv, N)
 
-    p_add = np.zeros((N_tests, folds))
+    p_add = np.zeros((N_tests))
     p_train = np.zeros((N_tests, bins*bins, folds))
     
     for k in tqdm.tqdm(range(N_tests)):
@@ -64,6 +63,7 @@ def perform_test_kfolding(N_tests, bins, N, bins_edge = None, folds=5):
 p_train, p_test = perform_test_traintest(N_tests, bins, N, bins_edge)
 np.save(directory+"p_train.npy", p_train)
 np.save(directory+"p_test.npy", p_test)
+del p_train, p_test
 
 p_kfolds = perform_test_kfolding(N_tests, bins, N, bins_edge, folds)
 np.save(directory+"p_kfolds.npy", p_kfolds)

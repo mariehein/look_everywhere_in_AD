@@ -14,17 +14,24 @@ parser.add_argument("--runs", default=100, type=int)
 parser.add_argument("--ensemble", default=10, type=int)
 parser.add_argument("--noearlystopping", default=False, action="store_true")
 parser.add_argument("--revert", default=True, action="store_false")
+parser.add_argument("--evaluate_on_train", default=False, action="store_true", help="Evaluating on test data results in a 50-50 " \
+"data split; to use the same code, statistics are increased for evaluation on training data")
 
 args = parser.parse_args()
-N_data = 50000 # size of train and test set
-inputs = 2 # number of dimensions
+
+if args.evaluate_on_train:
+    N_data = 240000
+else: 
+    N_data = 120000
+
+inputs = 4 # number of dimensions
 
 if not os.path.exists(args.directory):
 	os.makedirs(args.directory)
 	os.makedirs(args.directory+"runs/")
 
-# 2D standard normal distribution for background
-rv = stats.multivariate_normal([0,0], [[1,0],[0,1]])	
+# load 1.2M background events to pull sets from
+data_full = np.load("data/bkg.npy")
 
 # make arrays of predictions
 BT_test_preds = np.zeros((args.runs, N_data//2))
@@ -34,8 +41,9 @@ data_train_preds = np.zeros((args.runs, N_data//2))
 
 start = time.time()
 for i in tqdm.tqdm(range(args.start_runs, args.start_runs+args.runs)):
-    # Prep data set
-    data = rv.rvs(int(2*N_data))
+    idx = np.random.choice(len(data_full), 2 * N_data, replace=False)
+    data = data_full[idx]
+
     X_train, X_test =np.array_split(data,2)
     Y_train = np.append(np.ones(len(X_train)//2), np.zeros(len(X_train)//2))
     np.random.shuffle(Y_train)
