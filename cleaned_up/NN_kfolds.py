@@ -19,7 +19,6 @@ parser.add_argument("--directory", required=True, type=str)
 parser.add_argument("--noearlystopping", default=False, action="store_true")
 parser.add_argument("--uniform", default=False, action="store_true")
 
-
 args = parser.parse_args()
 
 def to_categorical(Y, N_classes=2):
@@ -49,7 +48,6 @@ def make_model(activation="relu",hidden=3,inputs=4,lr=1e-3,dropout=0.1, l1=0, l2
 
 	return model
 
-
 def oned_sample(N, rv):
     x = rv.rvs(N).reshape((N,1))
     y = rv.rvs(N).reshape((N,1))
@@ -62,10 +60,11 @@ else:
 if not os.path.exists(args.directory):
 	os.makedirs(args.directory)
 	
+
+data_preds = np.zeros((args.runs, 5,5000))
+samples_preds = np.zeros((args.runs, 5,5000))
+
 for i in range(args.start_runs, args.start_runs+args.runs):
-	direc_run=args.directory+"run"+str(i)+"/"
-	if not os.path.exists(direc_run):
-		os.makedirs(direc_run)
 
 	if args.uniform:
 		X = oned_sample(50000, rv)
@@ -74,9 +73,6 @@ for i in range(args.start_runs, args.start_runs+args.runs):
 	data, BT = np.array_split(X,2)
 	data = np.array_split(data, args.folds)
 	BT = np.array_split(BT, args.folds)
-
-	data_preds = np.zeros((5,5000))
-	samples_preds = np.zeros((5,5000))
 
 	for k in range(args.folds):
 		inds = np.roll(np.array(range(5)), k)
@@ -120,8 +116,8 @@ for i in range(args.start_runs, args.start_runs+args.runs):
 					callbacks=callbacks,
 				)
 			
-		data_preds[k] = model.predict(data_test)[:,1]
-		samples_preds[k] = model.predict(BT_test)[:,1]
+		data_preds[i-args.start_runs,k] = model.predict(data_test)[:,1]
+		samples_preds[i-args.start_runs,k] = model.predict(BT_test)[:,1]
 
-	np.save(direc_run+"test_data_preds.npy", data_preds)
-	np.save(direc_run+"test_BT_preds.npy", samples_preds)
+np.save(args.directory+"runs/run"+str(args.start_runs)+"_test_data_preds.npy", data_preds)
+np.save(args.directory+"runs/run"+str(args.start_runs)+"_test_BT_preds.npy", samples_preds)

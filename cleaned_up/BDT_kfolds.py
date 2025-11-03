@@ -66,15 +66,14 @@ for i in range(args.start_runs, args.start_runs+args.runs):
 		inds = np.arange(len(X_train))
 		np.random.shuffle(inds)
 		X_train = X_train[inds]
+		Y_train = Y_train[inds]
 
-		Y_train = np.append(np.ones(len(X_train)//2), np.zeros(len(X_train)//2))
-		np.random.shuffle(Y_train)
-
-		model = HistGradientBoostingClassifier(max_bins=args.bins, early_stopping=not args.noearlystopping)
-		model.fit(X_train, Y_train)
+		for i in range(args.ensemble):
+			model = HistGradientBoostingClassifier(max_bins=args.bins, early_stopping=not args.noearlystopping, validation_fraction=0.5)
+			model.fit(X_train, Y_train)
 			
-		data_preds[k] = model.predict_proba(data_test)[:,1]
-		samples_preds[k] = model.predict_proba(BT_test)[:,1]
+			data_preds[k] += model.predict_proba(data_test)[:,1]/args.ensemble
+			samples_preds[k] += model.predict_proba(BT_test)[:,1]/args.ensemble
 
 	np.save(direc_run+"test_data_preds.npy", data_preds)
 	np.save(direc_run+"test_BT_preds.npy", samples_preds)

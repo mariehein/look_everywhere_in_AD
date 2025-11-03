@@ -12,9 +12,6 @@ args = parser.parse_args()
 BH_percentiles = [1e-1, 1e-2, 1e-3, 1e-4]
 fixed_cut = [0.51, 0.53, 0.55]
 
-BH_percentiles = [1e-1, 1e-2, 1e-3, 1e-4]
-fixed_cut = [0.51, 0.53, 0.55]
-
 def calc_and_apply_threshold(samples_preds, data_preds, efficiency):
     """
     Returns number of samples and data events before and after cut
@@ -55,4 +52,4 @@ def make_arrays(folder, start_runs=0, runs=2100, folds=5, multiple=5):
     np.save(folder+"N.npy", np.sum(N, axis=1))
 
 print("Evaluate test on train")
-make_arrays(args.directory, runs=args.N_runs, folds=args.folds, multiple=args.multiple)
+make_arrays(args.directory, runs=args.N_runs, folds=args.folds, multiple=args.multiple, len_arrays=100)
