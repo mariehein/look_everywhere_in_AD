@@ -8,6 +8,7 @@
 
 #SBATCH --time=0-3:00:00
 #SBATCH --ntasks=1
+#SBATCH --mem=6G
 #SBATCH --array=0-10000:100
 
 source /home/zu992399/.bashrc
