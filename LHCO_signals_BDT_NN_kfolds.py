@@ -35,7 +35,7 @@ Y_test = np.load("data/Y_test.npy")
 signal_real = int(args.signal_number*len(signal)/100000)
 
 BT = data_full[:N_data]
-data = np.concatenate((data_full[:N_data-signal_real], signal[:signal_real]), axis=0)
+data = np.concatenate((data_full[N_data:2*N_data-signal_real], signal[:signal_real]), axis=0)
 
 BT_preds = np.zeros((args.runs, args.folds, N_data//5))
 data_preds = np.zeros((args.runs, args.folds, N_data//5))

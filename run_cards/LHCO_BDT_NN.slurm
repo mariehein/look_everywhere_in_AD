@@ -6,11 +6,11 @@
 
 #SBATCH --output=../output/LHCO_BDT_NN_%A_%a.txt
 
-#SBATCH --time=0-3:00:00
+#SBATCH --time=0-5:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=6G
-#SBATCH --array=0-10000:100
-
+#SBATCH --mem=4G
+###SBATCH --array=0-10000:100
+#SBATCH --array=8900,9500
 source /home/zu992399/.bashrc
 conda activate cathode
  

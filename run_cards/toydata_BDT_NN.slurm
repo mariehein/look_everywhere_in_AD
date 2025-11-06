@@ -8,7 +8,7 @@
 
 #SBATCH --time=0-3:00:00
 #SBATCH --ntasks=1
-#SBATCH --array=0-10000:100
+#SBATCH --array=0-9900:100
 
 source /home/zu992399/.bashrc
 conda activate cathode

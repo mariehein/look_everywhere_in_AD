@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+from sklearn.linear_model import LinearRegression
+from scipy.interpolate import UnivariateSpline
+
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -19,6 +22,7 @@ c_RWTH = {'b': '#00549F',  # blue
           'p': '#7A6FAC'}  # purple
 
 max_err=0.2
+max_SIC_lims=16
 
 S = 20000
 B = 312858
@@ -43,6 +47,13 @@ plt.rcParams['legend.frameon'] = True
 labels = [r"$\epsilon_B = 10^{-1}$", r"$\epsilon_B = 10^{-2}$", r"$\epsilon_B = 10^{-3}$"]
 colors = ["green", "blue", "red"]
 
+data_color = {"train": "black", "test": "red", "kfolds": "dodgerblue"}
+data_name = {"train": "Evaulate on train", "test": "Evaluate on test", "kfolds": "Evaluate with k-folding"}
+classifier_linestyle = {"BDT": "dashed", "NN": "solid", "NN_noearlystopping": "dotted"}
+classifier_name = {"BDT": "BDT", "NN": "NN with early stopping", "NN_noearlystopping": "NN without early stopping"}
+max_err = 0.2
+points = np.array([])
+
 def figure_start_calibration(N_tests):
     fig, ax = plt.subplots(1,3, figsize=(15,5))
     ax = ax.reshape((1,3))
@@ -59,6 +70,8 @@ def plot_pvalues_single(ax, pvalues, counts, title, NNBDT=True):
     if NNBDT:
         for i in range(len(labels)):
             #med = np.median(pvalues[i], axis=0)
+            np.arange(1, len(pvalues[i])+1)
+            len(pvalues[i])
             curr_counts = np.arange(1, len(pvalues[i])+1)/len(pvalues[i])
             #ax[0].fill_between(curr_counts, np.percentile(pvalues[i], 16, axis=0), np.percentile(pvalues[i], 84, axis=0), color=colors[i], alpha=0.2)
             ax[0].plot(curr_counts, pvalues[i], colors[i], label=labels[i])
@@ -71,7 +84,7 @@ def plot_pvalues_errorband(ax, pvalues, counts, title, NNBDT=True):
     if NNBDT:
         for i in range(len(labels)):
             med = np.median(pvalues[i], axis=0)
-            curr_counts = np.arange(1, len(pvalues[i])+1)/len(pvalues[i])
+            curr_counts = np.arange(1, len(pvalues[i][0])+1)/len(pvalues[i][0])
             ax[0].fill_between(curr_counts, np.percentile(pvalues[i], 16, axis=0), np.percentile(pvalues[i], 84, axis=0), color=colors[i], alpha=0.2)
             ax[0].plot(curr_counts, med, colors[i], label=labels[i])
         ax[0].set_title(title)
@@ -90,20 +103,25 @@ def calibration_curve_plot(p_train, p_test, p_kfolds, N_tests, name, title=None,
         ax[0,1].legend(loc="lower right")
     fig.tight_layout()
     plt.show()
+    fig.savefig("plots/calibration_curve_"+name+".pdf")
 
-def prep_pvalues(p, split_into, NNBDT):
+def prep_pvalues(ps, split_into, NNBDT):
     if NNBDT:
-        return
+        p_fin = []
+        for p in ps:
+            np.random.shuffle(p)
+            new_p = np.zeros((10, len(p)//10))
+            p = p[:(len(p)//10)*10].reshape(10,len(p)//10)
+            for j in range(10):
+                new_p[j] = np.sort(p[j])
+            p_fin.append(new_p)
+        return p_fin
     else:
-        np.random.shuffle(p)
-        p = p.reshape((split_into, len(p)//split_into))
-        return np.sort([np.sort(p[i]) for i in range(10)])
+        np.random.shuffle(ps)
+        ps = ps.reshape((split_into, len(ps)//split_into))
+        return np.sort([np.sort(ps[i]) for i in range(10)])
 
 def calibration_curve_plot_errorband(p_train, p_test, p_kfolds, N_tests, name, split_into=10, title=None, NNBDT=True):
-    p_train = prep_pvalues(p_train, split_into, NNBDT)
-    p_test = prep_pvalues(p_test, split_into, NNBDT)
-    p_kfolds = prep_pvalues(p_kfolds, split_into, NNBDT)
-
     fig, ax = figure_start_calibration(N_tests)
     counts = np.arange(1,N_tests+1)/N_tests
     plot_pvalues_errorband(ax[:,0], p_train, counts, "Evaluate on train set", NNBDT=NNBDT)
@@ -113,6 +131,7 @@ def calibration_curve_plot_errorband(p_train, p_test, p_kfolds, N_tests, name, s
         ax[0,1].legend(loc="lower right")
     fig.tight_layout()
     plt.show()
+    fig.savefig("plots/calibration_curve_"+name+".pdf")
 
 def read_ROC_SIC_1D(path, points, folder, N_runs=10, start_runs=0):
 	fpr=np.load(folder+"fpr_"+path+".npy")[start_runs:start_runs+N_runs]
@@ -130,20 +149,153 @@ def read_ROC_SIC_1D(path, points, folder, N_runs=10, start_runs=0):
 		SIC_values[j,-2] = np.nanmax(np.nan_to_num(t/np.sqrt(f),posinf=0))
 	return np.median(SIC_values,axis=0), np.percentile(SIC_values, 16, axis=0), np.percentile(SIC_values, 84, axis=0)
 
-def plot_end_1D(sig, name, small=True): 
-
-	plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-	plt.ylabel(r"$\max\ \epsilon_S/\sqrt{\epsilon_B}$")
-	plt.xlabel(r"$N_{sig}$")
-	plt.xticks(sig)
-	plt.savefig("plots/1D_"+name+".pdf")
+def plot_end_1D(fig, ax, sig, name, small=True, ylim=max_SIC_lims, title=None, plotting_directory="plots/", loc="lower right"): 
+	ax.legend(loc=loc)
+	ax.set_ylabel(r"$\max\ \epsilon_S/\sqrt{\epsilon_B}$")
+	ax.set_xlabel(r"$N_{sig}$")
+	ax.set_xticks(sig)
+	ax.set_xlim(min(sig), max(sig))
+	ax.set_ylim(0, ylim)
+	
+	if title is not None:
+		ymin, ymax = plt.ylim()
+		xmin, xmax = plt.xlim()
+		a = 0.03
+		plt.text(xmin + a * (xmax-xmin), ymin + (1-a) *(ymax-ymin) , title, size=plt.rcParams['axes.labelsize'], color='black', horizontalalignment='left', verticalalignment='top')
+	
+	fig.tight_layout()
+	fig.savefig(plotting_directory+"1D_"+name+".pdf")
 	plt.show()
 
-def plot_sic(sic, sic_low, sic_upp, sig, color, label, normed=False, linestyle="solid"):
-	if normed:
-		n = np.max(sic)
-		plt.plot(sig, sic/n, color=color,label=label, linestyle=linestyle)
-		plt.fill_between(sig, sic_low/n, sic_upp/n, alpha=0.2, facecolor=color)
-		return
-	plt.plot(sig, sic, color=color,label=label, linestyle=linestyle, marker="o")
-	plt.fill_between(sig, sic_low, sic_upp, alpha=0.2, facecolor=color)
+     
+def plot_end_1D_multiple(ax, sig, ylim=max_SIC_lims, ylabel=None, ylims=None, title=None, bbox=None, loc="lower right", legend=True): 
+    if legend:
+        if bbox:
+            ax.legend(loc=loc, bbox_to_anchor=bbox)
+        else:
+            ax.legend(loc=loc)
+    if ylabel is None:
+        ax.set_ylabel(r"$\max\ \epsilon_S/\sqrt{\epsilon_B}$")
+    else: 
+        ax.set_ylabel(ylabel)
+    ax.set_xlabel(r"$N_{sig}$")
+    ax.set_xticks(sig)
+    ax.set_xlim(min(sig), max(sig))
+    if ylims is None:
+        ax.set_ylim(0, ylim)
+    else:
+        ax.set_ylim(*ylims)
+
+    if title is not None:
+        ymin, ymax = ax.get_ylim()
+        xmin, xmax = ax.get_xlim()
+        a = 0.03
+        ax.text(xmin + a * (xmax-xmin), ymin + (1-a) *(ymax-ymin) , title, size=plt.rcParams['axes.labelsize'], color='black', horizontalalignment='left', verticalalignment='top')
+
+
+def plot_sic(ax, sic, sic_low, sic_upp, sig, color, label, normed=False, linestyle="solid", alpha=0.2, alpha_line=1.):
+	ax.plot(sig, sic, color=color,label=label, linestyle=linestyle, marker='o', alpha=alpha_line)
+	ax.fill_between(sig, sic_low, sic_upp, alpha=alpha, facecolor=color)
+
+def sics_plotting(general_directory, signals_plot, signals, classifiers=["BDT", "NN", "NN_noearlystopping"], datausages=["train", "test", "kfolds"]):
+    sic = np.zeros((len(signals),len(points)+2))
+    sic_low = np.zeros((len(signals),len(points)+2))
+    sic_upp = np.zeros((len(signals),len(points)+2))
+
+
+    fig, ax = plt.subplots(1,len(classifiers), figsize=(15,5))
+    for k,c in enumerate(classifiers): 
+        if c=="NN":
+            legend=True
+        else:
+            legend=False
+        for i, d in enumerate(datausages):
+            for j,s in enumerate(signals):
+                sic[j], sic_low[j], sic_upp[j] = read_ROC_SIC_1D("BDT", points, general_directory+"LHCO_"+c+"/"+d+"/Nsig_"+str(s)+"/")
+            plot_sic(ax[k], sic[:,-1], sic_low[:,-1], sic_upp[:,-1], signals, data_color[d], data_name[d])
+        plot_end_1D_multiple(ax[k], signals_plot, title=classifier_name[c], loc = "upper left", bbox=(0.025, 0.9), legend=legend)
+    fig.tight_layout()
+    fig.savefig("plots/LHCO_signals.pdf")
+
+
+class trials_factor():
+    def __init__(self, pvalues, switch_to_linear=1e-2, s=5):
+        self.splines = []
+        self.lins = []
+        self.min = np.min(pvalues)
+        self.switch_to_linear = switch_to_linear
+        for i in range(len(labels)):
+            curr_counts = np.arange(1, len(pvalues[i][0])+1)/len(pvalues[i][0])
+            med = np.median(np.log10(pvalues[i]), axis=0)
+            self.splines.append(UnivariateSpline(med, np.log10(curr_counts), s=s))
+            #spline_upper = UnivariateSpline(np.log10(curr_counts[start:]), np.percentile(np.log10(pvalues[i][:,start:]), 84, axis=0), s=s)
+            #spline_lower = UnivariateSpline(np.log10(curr_counts[start:]), np.percentile(np.log10(pvalues[i][:,start:]), 16, axis=0), s=s)
+            self.lins.append(LinearRegression())
+            self.lins[i].fit(med[curr_counts<1e-2].reshape(-1, 1), np.log10(curr_counts[curr_counts<1e-2]))
+    
+    def predict(self, pvalue, i):
+        pvalue = np.max([self.min*np.ones_like(pvalue), pvalue], axis=0)
+        lin_values = self.lins[i].predict(np.log10(pvalue.reshape(-1, 1)))
+        spline_values = self.splines[i](np.log10(pvalue))
+        mask = np.array(10**spline_values<self.switch_to_linear, dtype=int)
+        return 10**(mask*lin_values+(1-mask)*spline_values)
+    
+    def plot(self, ax):
+        x = np.logspace(np.log10(self.min), 0, 10000)
+        for i in range(len(self.splines)):
+            ax.plot(self.predict(x, i), x, color=colors[i], linestyle="dashed")
+    
+
+def plot_trials_factor(ax, p, tf, name, dont_plot_tf=False):
+    plot_pvalues_errorband(ax[:], p, None, name, NNBDT=True)
+    xmin, xmax = ax[0].get_xlim()
+    ymin, ymax = ax[0].get_ylim()
+    if not dont_plot_tf:
+        tf.plot(ax[0])
+    ax[0].set_xlim(xmin, xmax)
+    ax[0].set_ylim(ymin, ymax)
+
+def plot_trials_factor_split(p_train, p_test, p_kfolds, name, title=None, ignore_train=False):
+    if ignore_train:
+        tf_train = None
+    else:
+        tf_train = trials_factor(p_train, switch_to_linear=1e-2)
+    tf_test = trials_factor(p_test, switch_to_linear=1e-2)
+    tf_kfolds = trials_factor(p_kfolds, switch_to_linear=1e-2)
+
+    N_tests = len(p_train[0][0])
+    fig, ax = figure_start_calibration(N_tests)
+    plot_trials_factor(ax[:,0], p_train, tf_train, "Evaluate on train set", dont_plot_tf=ignore_train)
+    plot_trials_factor(ax[:,1], p_test, tf_test, "Evaluate on test set")
+    plot_trials_factor(ax[:,2], p_kfolds, tf_kfolds, "Evaluate with k-folding")
+
+    ax[0,1].legend(loc="lower right")
+    fig.tight_layout()
+    plt.show()
+    fig.savefig("plots/trials_factor_"+name+".pdf")
+
+    return {"train": tf_train, "test": tf_test, "kfolds": tf_kfolds }
+
+def signal_pvalues(p_train, p_test, p_kfolds, signals_plot, signals, name, classifiers=["BDT", "NN", "NN_noearlystopping"], datausages=["train", "test", "kfolds"]):
+    sigma3 = 1-0.9973
+    sigma5 = 5.7*1e-7
+
+    fig, ax = plt.subplots(1,len(labels), figsize=(15,5))
+    ax = ax.reshape(-1,1)
+
+    k=0
+    for i,l in enumerate(labels):
+        """for d in datausages:
+            ax[i,k].plot(signals, np.median(p_values[d][k, :, i], axis=-1), color=pl.data_color[d], label=pl.data_name[d])"""
+        ax[i,k].plot(signals, np.median(p_train[:,:, i], axis=-1), color=data_color["train"], label=data_name["train"], marker="o")
+        ax[i,k].plot(signals, np.median(p_test[:,:, i], axis=-1), color=data_color["test"], label=data_name["test"], marker="o")
+        ax[i,k].plot(signals, np.median(p_kfolds[:,:, i], axis=-1), color=data_color["kfolds"], label=data_name["kfolds"], marker="o")
+        ax[i,k].set_yscale("log")
+        ax[i,k].set_title(l)
+        ax[i,k].axhline(1, color="grey", linestyle="solid", label=r"0$\sigma$")
+        ax[i,k].axhline(sigma3, color="grey", linestyle="dashed", label=r"3$\sigma$")
+        ax[i,k].axhline(sigma5, color="grey", linestyle="dotted", label=r"5$\sigma$")
+        #ax[i,k].set_ylim(1,1e-7)
+        ax[i,k].set_xlim(0,1000)
+    fig.tight_layout()
+    fig.savefig("plots/pvalues_signals_"+name+".pdf")

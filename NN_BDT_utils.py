@@ -65,7 +65,7 @@ def NN_model_training(X_train, Y_train, noearlystopping, revert=True, inputs=4):
 				X_train,
 				Y_train,
 				batch_size=1024,
-				epochs=100,
+				epochs=50,
 				shuffle=True,
 				verbose=2,
 			)
@@ -76,7 +76,7 @@ def NN_model_training(X_train, Y_train, noearlystopping, revert=True, inputs=4):
 				X_train,
 				Y_train,
 				batch_size=1024,
-				epochs=100,
+				epochs=50,
 				shuffle=True,
 				verbose=2,
 				validation_split=val_frac,
