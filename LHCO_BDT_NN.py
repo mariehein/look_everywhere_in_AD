@@ -15,6 +15,7 @@ parser.add_argument("--noearlystopping", default=False, action="store_true")
 parser.add_argument("--revert", default=True, action="store_false")
 parser.add_argument("--evaluate_on_train", default=False, action="store_true", help="Evaluating on test data results in a 50-50 " \
 "data split; to use the same code, statistics are increased for evaluation on training data")
+parser.add_argument("--reduced_statistics_check", default=False, action="store_true",)
 
 args = parser.parse_args()
 
@@ -22,6 +23,9 @@ if args.evaluate_on_train:
     N_data = 240000
 else: 
     N_data = 120000
+
+if args.reduced_statistics_check: 
+    N_data = 50000
 
 inputs = 4 # number of dimensions
 

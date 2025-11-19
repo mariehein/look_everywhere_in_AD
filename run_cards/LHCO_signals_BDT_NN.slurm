@@ -18,6 +18,7 @@ cd ..
 classifier=${1}
 earlystopping=${2}
 data_usage=${3}
+randomize=${4}
 echo "Classifier: ${classifier}"
 echo "Earlystopping: ${earlystopping}"
 echo "Data usage: ${data_usage}"
@@ -30,6 +31,11 @@ if [[ "$earlystopping" == "True" ]]; then
 else
     direc=${gen_direc}"LHCO_${classifier}_noearlystopping/"
     extra_args="--noearlystopping"
+fi
+
+if [[ "$randomize" == "True" ]]; then
+    direc=${direc}"randsignal/"
+    extra_args=${extra_args} "--randomize_signal"
 fi
 
 if [[ "$data_usage" == "kfolds" ]]; then

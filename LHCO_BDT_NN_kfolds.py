@@ -14,10 +14,13 @@ parser.add_argument("--ensemble", default=10, type=int)
 parser.add_argument("--noearlystopping", default=False, action="store_true")
 parser.add_argument("--revert", default=True, action="store_false")
 parser.add_argument("--folds", default=5, type=int)
+parser.add_argument("--reduced_statistics_check", default=False, action="store_true",)
 
 args = parser.parse_args()
 
 N_data = 240000
+if args.reduced_statistics_check: 
+    N_data = 50000
 
 inputs = 4 # number of dimensions
 

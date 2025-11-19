@@ -13,6 +13,7 @@ parser.add_argument("--runs", default=10, type=int)
 parser.add_argument("--ensemble", default=10, type=int)
 parser.add_argument("--noearlystopping", default=False, action="store_true")
 parser.add_argument("--revert", default=True, action="store_false")
+parser.add_argument("--randomize_signal", default=True, action="store_true")
 parser.add_argument("--evaluate_on_train", default=False, action="store_true", help="Evaluating on test data results in a 50-50 " \
 "data split; to use the same code, statistics are increased for evaluation on training data")
 
@@ -41,7 +42,8 @@ Y_test = np.load("data/Y_test.npy")
 signal_real = int(args.signal_number*len(signal)/100000)
 
 BT = data_full[:N_data]
-data = np.concatenate((data_full[N_data:2*N_data-signal_real], signal[:signal_real]), axis=0)
+if not args.randomize_signal:
+    data = np.concatenate((data_full[N_data:2*N_data-signal_real], signal[:signal_real]), axis=0)
 
 # make arrays of predictions
 BT_test_preds = np.zeros((args.runs, set_size))
@@ -51,6 +53,9 @@ data_train_preds = np.zeros((args.runs, set_size))
 
 start = time.time()
 for i in tqdm.tqdm(range(args.runs)):    
+    if args.randomize_signal:
+        np.random.shuffle(signal)
+        data = np.concatenate((data_full[N_data:2*N_data-signal_real], signal[:signal_real]), axis=0)
     np.random.shuffle(data)
     np.random.shuffle(BT)    
     if args.evaluate_on_train: 
