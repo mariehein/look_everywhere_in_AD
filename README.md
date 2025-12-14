@@ -61,7 +61,7 @@ Beside changes to different submission system, which may need to be made, most i
 
 ## Plotting paper results
 
-If all runs are performed with the run cards as given here and only a changed general save directory, it should only be necessary to adjust ```general_directory``` at the top of both ```plotting_toydata.ipynb``` and ```plotting_LHCO``` and run the whole notebook for all paper plots to be created. All plotting functions are contained in ```plotting_utils.py``` to kepp plotting notebooks minimal.
+If all runs are performed with the run cards as given here and only a changed general save directory, it should only be necessary to adjust ```general_directory``` at the top of both ```plotting_toydata.ipynb``` and ```plotting_LHCO``` and run the whole notebook for all paper plots to be created. All plotting functions are contained in ```plotting_utils.py``` to keep plotting notebooks minimal.
 
 
 
