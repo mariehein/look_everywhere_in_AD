@@ -8,6 +8,8 @@ By Marie Hein, Ben Nachman and David Shih.
 ## Reproducing the paper results 
 In order to make the reproduction of the paper plots easier, the run cards used to produce the paper results are available in "run_cards". The structure of the code and how the run cards can be used to produce the paper runs is explained below.
 
+The LHCO data is obtained using ```LHCO_dataprep.ipynb``` but final files can be found in folder "data".
+
 ### Binned analysis
 
 For the binned analysis, as this runs quickly, there is a single file, which produces all paper p-values. This is done in ```toydata_binned_R.py```. ```toydata_binned.py```is an alternative code version, which chooses the best bin based on the lowest p-value instead of the highest $R(x)$. The directory for this run is set in the python file as are all other parameters. 
