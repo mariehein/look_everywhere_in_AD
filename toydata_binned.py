@@ -6,7 +6,7 @@ directory = "/hpcwork/zu992399/look_elsewhere_paper/toydata_binned/"
 
 bins = 5
 bins_edge = 2
-N = 50000
+N = 25000
 N_tests = 1000000
 folds = 5
 
