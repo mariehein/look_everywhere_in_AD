@@ -6,16 +6,18 @@
 
 #SBATCH --output=../output/LHCO_BDT_NN_%A_%a.txt
 
-#SBATCH --time=0-5:00:00
+#SBATCH --time=0-8:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=4G
-###SBATCH --array=0-10000:100
-#SBATCH --array=8900,9500
+###SBATCH --mem=6G
+###SBATCH --array=30600,30700,70800,70900,71000,71100
+#SBATCH --array=0-99900:100
+###SBATCH --array=90100-99900:100
 source /home/zu992399/.bashrc
 conda activate cathode
  
 cd ..
 
+arr_len=100
 classifier=${1}
 earlystopping=${2}
 data_usage=${3}
@@ -35,11 +37,11 @@ fi
 
 if [[ "$data_usage" == "kfolds" ]]; then
     echo "kfolds"
-    python LHCO_BDT_NN_kfolds.py --directory ${direc}"kfolds/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs 100 ${extra_args}
+    python LHCO_BDT_NN_kfolds.py --directory ${direc}"kfolds/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs ${arr_len} ${extra_args}
 elif [[ "$data_usage" == "train" ]]; then
     echo "train"
-    python LHCO_BDT_NN.py --directory ${direc}"train/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs 100 --evaluate_on_train ${extra_args}
+    python LHCO_BDT_NN.py --directory ${direc}"train/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs ${arr_len} --evaluate_on_train ${extra_args}
 else
     echo "test"
-    python LHCO_BDT_NN.py --directory ${direc}"test/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs 100 ${extra_args}
+    python LHCO_BDT_NN.py --directory ${direc}"test/" --classifier ${1} --start_run ${SLURM_ARRAY_TASK_ID} --runs ${arr_len} ${extra_args}
 fi

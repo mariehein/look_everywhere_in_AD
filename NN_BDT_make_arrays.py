@@ -13,7 +13,7 @@ parser.add_argument("--test", default=False, action="store_true")
 args = parser.parse_args()
 
 if args.kfolds:
-    N_samples_after, N_samples, N_after, N = stats.make_arrays_kfolds(args.directory, runs=args.N_runs, folds=args.folds, len_arrays=100)
+    N_samples_after, N_samples, N_after, N = stats.make_arrays_kfolds(args.directory, runs=args.N_runs, folds=args.folds, len_arrays=args.len_arrays)
     p = stats.p_values_NN_BDT(N_samples_after, N_samples, N_after, N)
     np.save(args.save_directory+"kfolds.npy", p)
 elif args.test:

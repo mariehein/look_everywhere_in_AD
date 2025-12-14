@@ -58,6 +58,7 @@ def make_NN_model(activation="relu",hidden=3,inputs=4,lr=1e-3,dropout=0.1, l1=0,
 	)
 	return model
 
+
 def NN_model_training(X_train, Y_train, noearlystopping, revert=True, inputs=4):
 	model = make_NN_model(inputs=inputs)
 	if noearlystopping:
@@ -93,16 +94,15 @@ def NN_training_and_preds(args, X_train, Y_train, get_preds_list, inputs=4):
 		preds_list[i]=model.predict(arr)[:,1]
 	return preds_list
 
-
 def BDT_training_and_preds(args, X_train, Y_train, get_preds_list, run):
 	from sklearn.ensemble import HistGradientBoostingClassifier
 	preds_list = [np.zeros(arr.shape[0], dtype=float) for arr in get_preds_list]
 	for j in range(args.ensemble):
 		np.random.seed(args.ensemble*run+j)
-		model = HistGradientBoostingClassifier(early_stopping=not args.noearlystopping, validation_fraction=0.5)
+		model = HistGradientBoostingClassifier(early_stopping=not args.noearlystopping, validation_fraction=0.5, max_iter=50, verbose=1)
 		results = model.fit(X_train, Y_train)
 
-		if args.revert:
+		if not args.noearlystopping and args.revert:
 			min_ind = max(np.argmin(results.validation_score_)-1,0)
 			for i,arr in enumerate(get_preds_list):
 				for l, v in enumerate(model.staged_predict_proba(arr)):

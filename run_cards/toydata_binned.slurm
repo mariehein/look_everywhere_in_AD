@@ -2,7 +2,7 @@
 
 ### Job name
 #SBATCH --job-name=toydata_binned
-#SBATCH --account rwth0934
+###SBATCH --account rwth0934
 
 #SBATCH --output=../output/toy_binned_%j.txt
 
@@ -14,4 +14,4 @@ source /home/zu992399/.bashrc
 conda activate cathode
  
 cd ..
-python toydata_binned.py
+python toydata_binned_R.py
