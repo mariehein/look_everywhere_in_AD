@@ -5,6 +5,7 @@ import argparse
 import time
 import tqdm
 import os
+
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--directory", required=True, type=str)
 parser.add_argument("--classifier", type=str, choices=["BDT", "NN"], required=True)
